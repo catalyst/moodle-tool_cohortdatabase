@@ -150,11 +150,18 @@ class tool_cohortdatabase_sync {
 
         // Next - add/remove users to cohorts.
 
-        // This iterates over each cohort - it might be better to batch process these a bit more,
+        // This iterates over each cohort - it might be better to batch process these and do multiple cohorts at a time,
         // but for now we process each cohort individually.
 
+        $newusers = array();
         foreach ($cohorts as $cohort) {
-            $currentusers = $DB->get_records('cohort_members', array('id' => $cohort->id), '', 'userid');
+            // Current users should be array of configured key == $USER->id
+            $sql = "SELECT u.".$localuserfield.", c.userid
+                      FROM {user} u
+                      JOIN {cohort_members} c ON c.userid = u.id
+                     WHERE c.id = ?";
+            $currentusers = $DB->get_records_sql($sql, array($cohort->id));
+
             // Now get records from external table.
             $sqlfields = array($remoteuserfield);
             $sql = $this->db_get_sql($cohorttable, array($remotecohortidfield => $cohort->idnumber), $sqlfields, true);
@@ -167,12 +174,34 @@ class tool_cohortdatabase_sync {
                             $trace->output('error: invalid external cohort record, user fields is mandatory: ' . json_encode($fields), 1); // Hopefully every geek can read JS, right?
                             continue;
                         }
-
+                        if (!empty($currentusers[$fields[$remoteuserfield_l]])) {
+                            // This user is already a member of the cohort.
+                            unset($currentusers[$fields[$remoteuserfield_l]]);
+                        } else {
+                            // Add user to cohort.
+                            $newuser = new stdClass();
+                            $newuser->cohortid  = $cohort->id;
+                            $newuser->userid    = $currentusers[$fields[$remoteuserfield_l]];
+                            $newuser->timeadded = time();
+                            $newusers[] = $newuser;
+                        }
                     }
                 }
             }
+            if (!empty($currentusers)) {
+                // Delete users no longer in cohort.
+                list($sql, $params) = $DB->get_in_or_equal($currentusers);
+                $sql .= " AND cohortid = ?";
+                $params[] = $cohort->id;
+                $DB->delete_records_select('cohort_members', $sql);
+                $trace->output('Bulk delete of '.count($currentusers).' users from cohortid'.$cohort->id);
+            }
         }
-
+        // We do this at the very end so we can batch process all inserts for speed.
+        if (!empty($newusers)) {
+            $DB->insert_records('cohort_members', $newusers);
+            $trace->output('Bulk insert of '.count($newusers).' users');
+        }
 
         $extdb->Close();
         return 0;
