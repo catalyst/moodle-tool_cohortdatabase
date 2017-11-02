@@ -56,13 +56,13 @@ class tool_cohortdatabase_sync {
         }
 
         // Set some vars for better code readability.
-        $cohorttable           = $this->config->remotecohorttable;
-        $localuserfield        = $this->config->localuserfield;
-        $remoteuserfield       = $this->config->remoteuserfield;
-        $remotecohortidfield   = $this->config->remotecohortidfield;
-        $remotecohortnamefield = $this->config->remotecohortnamefield;
-        $remotecohortdescfield = $this->config->remotecohortdescfield;
-        $removeaction          = $this->config->removeaction;
+        $cohorttable           = trim($this->config->remotecohorttable);
+        $localuserfield        = trim($this->config->localuserfield);
+        $remoteuserfield       = trim($this->config->remoteuserfield);
+        $remotecohortidfield   = trim($this->config->remotecohortidfield);
+        $remotecohortnamefield = trim($this->config->remotecohortnamefield);
+        $remotecohortdescfield = trim($this->config->remotecohortdescfield);
+        $removeaction          = trim($this->config->removeaction);
 
         // Lowercased versions - necessary because we normalise the resultset with array_change_key_case().
         $remoteuserfield_l  = strtolower($remoteuserfield);
@@ -76,7 +76,14 @@ class tool_cohortdatabase_sync {
             return 1;
         }
         // Get list of current cohorts indexed by idnumber.
-        $cohorts = $DB->get_records('cohort', array('component' => 'tool_cohortdatabase'), '', 'idnumber, id, name, description');
+        $cohortrecords = $DB->get_records('cohort', array('component' => 'tool_cohortdatabase'), '', 'idnumber, id, name, description');
+        $cohorts = array();
+        foreach ($cohortrecords as $cohort) {
+            // Index the cohorts using idnumber for easy processing.
+            $cohorts[$cohort->idnumber] = $cohort;
+        }
+        $cohortrecords = null; // We don't need cohortrecords anymore.
+
         $sysctxt = context_system::instance();
 
         // First check/create all cohorts.
@@ -97,6 +104,12 @@ class tool_cohortdatabase_sync {
                         $trace->output('error: invalid external cohort record, id and name are mandatory: ' . json_encode($fields), 1); // Hopefully every geek can read JS, right?
                         continue;
                     }
+                    // Trim some values.
+                    $fields[$remotecohortidfield_l] = trim($fields[$remotecohortidfield_l]);
+                    $fields[$remotecohortnamefield_l] = trim($fields[$remotecohortnamefield_l]);
+                    if (!empty($remotecohortdescfield)) {
+                        $fields[$remotecohortdescfield_l] = trim($fields[$remotecohortdescfield_l]);
+                    }
 
                     if (!empty($cohorts[$fields[$remotecohortidfield_l]])) {
                         // If this cohort exists, check to see if it needs name/description updated.
@@ -113,10 +126,10 @@ class tool_cohortdatabase_sync {
                     } else  {
                         // Need to create this cohort.
                         $newcohort = new stdClass();
-                        $newcohort->name = $fields[$remotecohortnamefield_l];
-                        $newcohort->idnumber = $fields[$remotecohortidfield_l];
+                        $newcohort->name = trim($fields[$remotecohortnamefield_l]);
+                        $newcohort->idnumber = trim($fields[$remotecohortidfield_l]);
                         if (!empty($remotecohortdescfield)) {
-                            $newcohort->description = $fields[$remotecohortdescfield_l];
+                            $newcohort->description = trim($fields[$remotecohortdescfield_l]);
                         }
                         $newcohort->component = 'tool_cohortdatabase';
                         $newcohort->timecreated = $now;
@@ -154,14 +167,14 @@ class tool_cohortdatabase_sync {
         // but for now we process each cohort individually.
 
         $newusers = array();
+        $needusers = array(); // Contains a list of external user ids we need to get for insert.
         foreach ($cohorts as $cohort) {
             // Current users should be array of configured key == $USER->id
             $sql = "SELECT u.".$localuserfield.", c.userid
                       FROM {user} u
                       JOIN {cohort_members} c ON c.userid = u.id
-                     WHERE c.id = ?";
-            $currentusers = $DB->get_records_sql($sql, array($cohort->id));
-
+                     WHERE c.cohortid = ?";
+            $currentusers = $DB->get_records_sql_menu($sql, array($cohort->id));
             // Now get records from external table.
             $sqlfields = array($remoteuserfield);
             $sql = $this->db_get_sql($cohorttable, array($remotecohortidfield => $cohort->idnumber), $sqlfields, true);
@@ -170,6 +183,7 @@ class tool_cohortdatabase_sync {
                     while ($fields = $rs->FetchRow()) {
                         $fields = array_change_key_case($fields, CASE_LOWER);
                         $fields = $this->db_decode($fields);
+                        $fields[$remoteuserfield_l] = trim($fields[$remoteuserfield_l]);
                         if (empty($fields[$remoteuserfield_l])) {
                             $trace->output('error: invalid external cohort record, user fields is mandatory: ' . json_encode($fields), 1); // Hopefully every geek can read JS, right?
                             continue;
@@ -181,24 +195,41 @@ class tool_cohortdatabase_sync {
                             // Add user to cohort.
                             $newuser = new stdClass();
                             $newuser->cohortid  = $cohort->id;
-                            $newuser->userid    = $currentusers[$fields[$remoteuserfield_l]];
+                            $newuser->userid    = $fields[$remoteuserfield_l];
                             $newuser->timeadded = time();
                             $newusers[] = $newuser;
+                            $needusers[] = $fields[$remoteuserfield_l];
                         }
                     }
                 }
             }
             if (!empty($currentusers)) {
                 // Delete users no longer in cohort.
-                list($sql, $params) = $DB->get_in_or_equal($currentusers);
-                $sql .= " AND cohortid = ?";
+                list($csql, $params) = $DB->get_in_or_equal($currentusers);
+                $sql = "userid $csql AND cohortid = ?";
                 $params[] = $cohort->id;
-                $DB->delete_records_select('cohort_members', $sql);
+                $DB->delete_records_select('cohort_members', $sql, $params);
                 $trace->output('Bulk delete of '.count($currentusers).' users from cohortid'.$cohort->id);
             }
         }
         // We do this at the very end so we can batch process all inserts for speed.
         if (!empty($newusers)) {
+            // First we need to map the userid in external table with userid in moodle..
+            $vars = implode("','", $needusers);
+            $sql = "SELECT ".$localuserfield.", id
+                      FROM {user} u
+                     WHERE ".$localuserfield. " IN ('".$vars."')";
+            $currentusers = $DB->get_records_sql_menu($sql);
+            foreach ($newusers as $id => $newuser) {
+                if (empty($currentusers[$newuser->userid])) {
+                    unset($newusers[$id]);
+                    $trace->output('Could not find user with '.$localuserfield.' = '.$newuser->userid);
+                } else {
+                    $newusers[$id]->userid = $currentusers[$newuser->userid];
+                }
+            }
+
+            // Now insert the records.
             $DB->insert_records('cohort_members', $newusers);
             $trace->output('Bulk insert of '.count($newusers).' users');
         }
@@ -309,7 +340,7 @@ class tool_cohortdatabase_sync {
         return $extdb;
     }
     protected function db_encode($text) {
-        $dbenc = $this->get_config('dbencoding');
+        $dbenc = $this->config->dbencoding;
         if (empty($dbenc) or $dbenc == 'utf-8') {
             return $text;
         }
@@ -324,7 +355,7 @@ class tool_cohortdatabase_sync {
     }
 
     protected function db_decode($text) {
-        $dbenc = $this->get_config('dbencoding');
+        $dbenc = $this->config->dbencoding;
         if (empty($dbenc) or $dbenc == 'utf-8') {
             return $text;
         }
@@ -337,7 +368,36 @@ class tool_cohortdatabase_sync {
             return core_text::convert($text, $dbenc, 'utf-8');
         }
     }
+    protected function db_get_sql($table, array $conditions, array $fields, $distinct = false, $sort = "") {
+        $fields = $fields ? implode(',', $fields) : "*";
+        $where = array();
+        if ($conditions) {
+            foreach ($conditions as $key=>$value) {
+                $value = $this->db_encode($this->db_addslashes($value));
 
+                $where[] = "$key = '$value'";
+            }
+        }
+        $where = $where ? "WHERE ".implode(" AND ", $where) : "";
+        $sort = $sort ? "ORDER BY $sort" : "";
+        $distinct = $distinct ? "DISTINCT" : "";
+        $sql = "SELECT $distinct $fields
+                  FROM $table
+                 $where
+                  $sort";
+
+        return $sql;
+    }
+    protected function db_addslashes($text) {
+        // Use custom made function for now - it is better to not rely on adodb or php defaults.
+        if ($this->config->dbsybasequoting) {
+            $text = str_replace('\\', '\\\\', $text);
+            $text = str_replace(array('\'', '"', "\0"), array('\\\'', '\\"', '\\0'), $text);
+        } else {
+            $text = str_replace("'", "''", $text);
+        }
+        return $text;
+    }
 }
 
 
