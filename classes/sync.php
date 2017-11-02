@@ -203,7 +203,7 @@ class tool_cohortdatabase_sync {
                     }
                 }
             }
-            if (!empty($currentusers)) {
+            if (empty($removeaction) && !empty($currentusers)) {
                 // Delete users no longer in cohort.
                 list($csql, $params) = $DB->get_in_or_equal($currentusers);
                 $sql = "userid $csql AND cohortid = ?";
