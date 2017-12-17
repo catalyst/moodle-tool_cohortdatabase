@@ -15,10 +15,11 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Database enrolment plugin settings and presets.
+ * Cohort database plugin settings and presets.
  *
- * @package    enrol_database
- * @copyright  2010 Petr Skoda {@link http://skodak.org}
+ * @package    tool_cohortdatabase
+ * @author     Dan Marsden
+ * @copyright  2017 Catalyst IT
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 

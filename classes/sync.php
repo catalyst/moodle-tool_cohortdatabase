@@ -27,6 +27,13 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+/**
+ * Cohortdatabase tool class
+ *
+ * @package    tool_cohortdatabase
+ * @copyright  2017 onwards Dan Marsden http://danmarsden.com
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 class tool_cohortdatabase_sync {
     /**
      * @var stdClass config for this plugin
@@ -375,7 +382,6 @@ class tool_cohortdatabase_sync {
      *
      * @return null|ADONewConnection
      */
-
     public function db_init() {
         global $CFG;
 
@@ -403,6 +409,13 @@ class tool_cohortdatabase_sync {
         }
         return $extdb;
     }
+
+    /**
+     * Encode text.
+     *
+     * @param string $text
+     * @return string
+     */
     protected function db_encode($text) {
         $dbenc = $this->config->dbencoding;
         if (empty($dbenc) or $dbenc == 'utf-8') {
@@ -418,6 +431,12 @@ class tool_cohortdatabase_sync {
         }
     }
 
+    /**
+     * Decode text.
+     *
+     * @param string $text
+     * @return string
+     */
     protected function db_decode($text) {
         $dbenc = $this->config->dbencoding;
         if (empty($dbenc) or $dbenc == 'utf-8') {
@@ -432,6 +451,17 @@ class tool_cohortdatabase_sync {
             return core_text::convert($text, $dbenc, 'utf-8');
         }
     }
+
+    /**
+     * Generate SQL required based on params.
+     *
+     * @param string $table - name of table
+     * @param array $conditions - conditions for select.
+     * @param array $fields - fields to return
+     * @param boolean $distinct
+     * @param string $sort
+     * @return string
+     */
     protected function db_get_sql($table, array $conditions, array $fields, $distinct = false, $sort = "") {
         $fields = $fields ? implode(',', $fields) : "*";
         $where = array();
@@ -452,6 +482,13 @@ class tool_cohortdatabase_sync {
 
         return $sql;
     }
+
+    /**
+     * Add slashes to text.
+     *
+     * @param string $text
+     * @return string
+     */
     protected function db_addslashes($text) {
         // Use custom made function for now - it is better to not rely on adodb or php defaults.
         if ($this->config->dbsybasequoting) {
