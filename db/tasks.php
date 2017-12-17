@@ -13,19 +13,22 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
-
 /**
- * Database enrolment plugin version specification.
+ * Cohort database tasks.
  *
  * @package    tool_cohortdatabase
- * @author     Dan Marsden
- * @copyright  2017 Catalyst IT
+ * @copyright  2017 Dan Marsden
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2017103000;        // The current plugin version (Date: YYYYMMDDXX)
-$plugin->requires  = 2016051900;        // Requires this Moodle version
-$plugin->component = 'tool_cohortdatabase';  // Full name of the plugin (used for diagnostics)
-//TODO: should we add cron sync?
+$tasks = array(
+    array(
+        'classname' => 'tool_cohortdatabase\task\sync',
+        'blocking' => 0,
+        'minute' => '15',
+        'hour' => '1',
+        'day' => '*',
+        'dayofweek' => '*',
+        'month' => '*')
+);
