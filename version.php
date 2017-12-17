@@ -28,4 +28,3 @@ defined('MOODLE_INTERNAL') || die();
 $plugin->version   = 2017103000;        // The current plugin version (Date: YYYYMMDDXX)
 $plugin->requires  = 2016051900;        // Requires this Moodle version
 $plugin->component = 'tool_cohortdatabase';  // Full name of the plugin (used for diagnostics)
-//TODO: should we add cron sync?

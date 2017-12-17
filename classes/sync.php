@@ -56,7 +56,6 @@ class tool_cohortdatabase_sync {
         core_php_time_limit::raise();
         raise_memory_limit(MEMORY_HUGE);
 
-
         // Set some vars for better code readability.
         $cohorttable           = trim($this->config->remotecohorttable);
         $localuserfield        = trim($this->config->localuserfield);
@@ -73,11 +72,10 @@ class tool_cohortdatabase_sync {
         $remotecreateusersauth = trim($this->config->createusers_auth);
 
         // Lowercased versions - necessary because we normalise the resultset with array_change_key_case().
-        $remoteuserfield_l  = strtolower($remoteuserfield);
-        $remotecohortidfield_l = strtolower($remotecohortidfield);
-        $remotecohortnamefield_l  = strtolower($remotecohortnamefield);
-        $remotecohortdescfield_l  = strtolower($remotecohortdescfield);
-
+        $remoteuserfieldl  = strtolower($remoteuserfield);
+        $remotecohortidfieldl = strtolower($remotecohortidfield);
+        $remotecohortnamefieldl = strtolower($remotecohortnamefield);
+        $remotecohortdescfieldl = strtolower($remotecohortdescfield);
 
         if (empty($cohorttable) || empty($localuserfield) || empty($remoteuserfield) || empty($remotecohortidfield)) {
             $trace->output('External cohort config not complete.');
@@ -140,36 +138,36 @@ class tool_cohortdatabase_sync {
                 while ($fields = $rs->FetchRow()) {
                     $fields = array_change_key_case($fields, CASE_LOWER);
                     $fields = $this->db_decode($fields);
-                    if (empty($fields[$remotecohortidfield_l]) or empty($fields[$remotecohortnamefield_l])) {
+                    if (empty($fields[$remotecohortidfieldl]) or empty($fields[$remotecohortnamefieldl])) {
                         $trace->output('error: invalid external cohort record, id and name are mandatory: ' . json_encode($fields), 1); // Hopefully every geek can read JS, right?
                         continue;
                     }
                     // Trim some values.
-                    $fields[$remotecohortidfield_l] = trim($fields[$remotecohortidfield_l]);
-                    $fields[$remotecohortnamefield_l] = trim($fields[$remotecohortnamefield_l]);
+                    $fields[$remotecohortidfieldl] = trim($fields[$remotecohortidfieldl]);
+                    $fields[$remotecohortnamefieldl] = trim($fields[$remotecohortnamefieldl]);
                     if (!empty($remotecohortdescfield)) {
-                        $fields[$remotecohortdescfield_l] = trim($fields[$remotecohortdescfield_l]);
+                        $fields[$remotecohortdescfieldl] = trim($fields[$remotecohortdescfieldl]);
                     }
 
-                    if (!empty($cohorts[$fields[$remotecohortidfield_l]])) {
+                    if (!empty($cohorts[$fields[$remotecohortidfieldl]])) {
                         // If this cohort exists, check to see if it needs name/description updated.
-                        $existingcohort = $cohorts[$fields[$remotecohortidfield_l]];
-                        if ($existingcohort->name <> $fields[$remotecohortnamefield_l] ||
-                            (!empty($remotecohortdescfield) && $existingcohort->description <> $fields[$remotecohortdescfield_l])) {
-                            $existingcohort->name = $fields[$remotecohortnamefield_l];
+                        $existingcohort = $cohorts[$fields[$remotecohortidfieldl]];
+                        if ($existingcohort->name <> $fields[$remotecohortnamefieldl] ||
+                            (!empty($remotecohortdescfield) && $existingcohort->description <> $fields[$remotecohortdescfieldl])) {
+                            $existingcohort->name = $fields[$remotecohortnamefieldl];
                             if (!empty($remotecohortdescfield)) {
-                                $existingcohort->description = $fields[$remotecohortdescfield_l];
+                                $existingcohort->description = $fields[$remotecohortdescfieldl];
                             }
                             $DB->update_record('cohort', $existingcohort);
                             $cohortsupdated++;
                         }
-                    } else  {
+                    } else {
                         // Need to create this cohort.
                         $newcohort = new stdClass();
-                        $newcohort->name = trim($fields[$remotecohortnamefield_l]);
-                        $newcohort->idnumber = trim($fields[$remotecohortidfield_l]);
+                        $newcohort->name = trim($fields[$remotecohortnamefieldl]);
+                        $newcohort->idnumber = trim($fields[$remotecohortidfieldl]);
                         if (!empty($remotecohortdescfield)) {
-                            $newcohort->description = trim($fields[$remotecohortdescfield_l]);
+                            $newcohort->description = trim($fields[$remotecohortdescfieldl]);
                         }
                         $newcohort->component = 'tool_cohortdatabase';
                         $newcohort->timecreated = $now;
@@ -185,7 +183,7 @@ class tool_cohortdatabase_sync {
             }
             $rs->Close();
             $trace->output('Updated '.$cohortsupdated.' cohort names/descriptions');
-            // Check to see if there are cohorts to insert
+            // Check to see if there are cohorts to insert.
             if (!empty($newcohorts)) {
                 $DB->insert_records('cohort', $newcohorts);
                 $trace->output('Bulk insert of '.count($newcohorts).' new cohorts');
@@ -209,7 +207,7 @@ class tool_cohortdatabase_sync {
         $newmembers = array();
         $needusers = array(); // Contains a list of external user ids we need to get for insert.
         foreach ($cohorts as $cohort) {
-            // Current users should be array of configured key == $USER->id
+            // Current users should be array of configured key == $USER->id.
             $sql = "SELECT u.".$localuserfield.", c.userid
                       FROM {user} u
                       JOIN {cohort_members} c ON c.userid = u.id
@@ -223,22 +221,22 @@ class tool_cohortdatabase_sync {
                     while ($fields = $rs->FetchRow()) {
                         $fields = array_change_key_case($fields, CASE_LOWER);
                         $fields = $this->db_decode($fields);
-                        $fields[$remoteuserfield_l] = trim($fields[$remoteuserfield_l]);
-                        if (empty($fields[$remoteuserfield_l])) {
+                        $fields[$remoteuserfieldl] = trim($fields[$remoteuserfieldl]);
+                        if (empty($fields[$remoteuserfieldl])) {
                             $trace->output('error: invalid external cohort record, user fields is mandatory: ' . json_encode($fields), 1); // Hopefully every geek can read JS, right?
                             continue;
                         }
-                        if (!empty($currentusers[$fields[$remoteuserfield_l]])) {
+                        if (!empty($currentusers[$fields[$remoteuserfieldl]])) {
                             // This user is already a member of the cohort.
-                            unset($currentusers[$fields[$remoteuserfield_l]]);
+                            unset($currentusers[$fields[$remoteuserfieldl]]);
                         } else {
                             // Add user to cohort.
                             $newmember = new stdClass();
                             $newmember->cohortid  = $cohort->id;
-                            $newmember->userid    = $fields[$remoteuserfield_l];
+                            $newmember->userid    = $fields[$remoteuserfieldl];
                             $newmember->timeadded = time();
                             $newmembers[] = $newmember;
-                            $needusers[] = $fields[$remoteuserfield_l];
+                            $needusers[] = $fields[$remoteuserfieldl];
                         }
                     }
                 }
@@ -275,7 +273,8 @@ class tool_cohortdatabase_sync {
             $createdusers = 0;
             if ($createusers && !empty($missingusers)) {
                 // Get user info from external db.
-                $fields = array($remotecreateusersusername, $remotecreateusersemail, $remotecreateusersfirstname, $remotecreateuserslastname);
+                $fields = array($remotecreateusersusername, $remotecreateusersemail,
+                                $remotecreateusersfirstname, $remotecreateuserslastname);
                 $sql = "SELECT DISTINCT ".implode(",", $fields)."
                   FROM $cohorttable WHERE $remoteuserfield IN ('".implode("','", $missingusers)."')";
                 if ($rs = $extdb->Execute($sql)) {
@@ -353,8 +352,8 @@ class tool_cohortdatabase_sync {
                 $rs->Close();
 
             } else {
-                $fields_obj = $rs->FetchObj();
-                $columns = array_keys((array)$fields_obj);
+                $fieldsobj = $rs->FetchObj();
+                $columns = array_keys((array)$fieldsobj);
 
                 echo $OUTPUT->notification('External cohort table contains following columns:<br />'.implode(', ', $columns), 'notifysuccess');
                 $rs->Close();
@@ -409,7 +408,7 @@ class tool_cohortdatabase_sync {
             return $text;
         }
         if (is_array($text)) {
-            foreach($text as $k=>$value) {
+            foreach ($text as $k => $value) {
                 $text[$k] = $this->db_encode($value);
             }
             return $text;
@@ -424,7 +423,7 @@ class tool_cohortdatabase_sync {
             return $text;
         }
         if (is_array($text)) {
-            foreach($text as $k=>$value) {
+            foreach ($text as $k => $value) {
                 $text[$k] = $this->db_decode($value);
             }
             return $text;
@@ -436,7 +435,7 @@ class tool_cohortdatabase_sync {
         $fields = $fields ? implode(',', $fields) : "*";
         $where = array();
         if ($conditions) {
-            foreach ($conditions as $key=>$value) {
+            foreach ($conditions as $key => $value) {
                 $value = $this->db_encode($this->db_addslashes($value));
 
                 $where[] = "$key = '$value'";
