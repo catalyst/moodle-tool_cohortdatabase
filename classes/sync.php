@@ -102,7 +102,6 @@ class tool_cohortdatabase_sync {
                         if ($count > $minrecords) {
                             $hasenoughrecords = true;
                         }
-                        $trace->output(print_r($fields, true));
                     }
                 }
             }
@@ -114,7 +113,8 @@ class tool_cohortdatabase_sync {
         }
 
         // Get list of current cohorts indexed by idnumber.
-        $cohortrecords = $DB->get_records('cohort', array('component' => 'tool_cohortdatabase'), '', 'idnumber, id, name, description');
+        $cohortrecords = $DB->get_records('cohort', array('component' => 'tool_cohortdatabase'),
+            '', 'idnumber, id, name, description');
         $cohorts = array();
         foreach ($cohortrecords as $cohort) {
             // Index the cohorts using idnumber for easy processing.
@@ -304,7 +304,7 @@ class tool_cohortdatabase_sync {
     /**
      * Test plugin settings, print info to output.
      */
-    function test_settings() {
+    public function test_settings() {
         global $CFG, $OUTPUT;
 
         // NOTE: this is not localised intentionally, admins are supposed to understand English at least a bit...
@@ -355,7 +355,8 @@ class tool_cohortdatabase_sync {
                 $fieldsobj = $rs->FetchObj();
                 $columns = array_keys((array)$fieldsobj);
 
-                echo $OUTPUT->notification('External cohort table contains following columns:<br />'.implode(', ', $columns), 'notifysuccess');
+                echo $OUTPUT->notification('External cohort table contains following columns:<br />'.
+                    implode(', ', $columns), 'notifysuccess');
                 $rs->Close();
             }
         }
@@ -375,7 +376,7 @@ class tool_cohortdatabase_sync {
      * @return null|ADONewConnection
      */
 
-    function db_init() {
+    public function db_init() {
         global $CFG;
 
         require_once($CFG->libdir.'/adodb/adodb.inc.php');

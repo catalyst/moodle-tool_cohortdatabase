@@ -81,7 +81,8 @@ if ($hassiteconfig) {
     $settings->add(new admin_setting_heading('tool_cohortdatabase_localheader',
         get_string('settingsheaderlocal', 'tool_cohortdatabase'), ''));
 
-    $options = array('id' => 'id', 'idnumber' => 'idnumber', 'email' => 'email', 'username' => 'username'); // only local users if username selected, no mnet users!
+    // Only local users if username selected, no mnet users!
+    $options = array('id' => 'id', 'idnumber' => 'idnumber', 'email' => 'email', 'username' => 'username');
     $settings->add(new admin_setting_configselect('tool_cohortdatabase/localuserfield',
         get_string('localuserfield', 'tool_cohortdatabase'), '', 'idnumber', $options));
 
