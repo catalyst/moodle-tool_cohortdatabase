@@ -25,7 +25,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2017103000;        // The current plugin version (Date: YYYYMMDDXX).
+$plugin->version   = 2017103001;        // The current plugin version (Date: YYYYMMDDXX).
 $plugin->requires  = 2016051900;        // Requires this Moodle version.
 $plugin->component = 'tool_cohortdatabase';
 $plugin->maturity = MATURITY_STABLE;
