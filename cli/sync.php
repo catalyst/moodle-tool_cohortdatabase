@@ -17,14 +17,8 @@
 /**
  * CLI sync for full cohort database synchronisation.
  *
- * Sample cron entry:
- * # 5 minutes past 4am
- * 5 4 * * * $sudo -u www-data /usr/bin/php /var/www/moodle/admin/tool/cohortdatabase/cli/sync.php
- *
- * Notes:
- *   - it is required to use the web server account when executing PHP CLI scripts
- *   - you need to change the "www-data" to match the apache user account
- *   - use "su" if "sudo" not available
+ * The sync is managed using standard Moodle scheduled tasks. This script is provided for
+ * convenience when wanting to run via cli without using the core scheduled tasks.
  *
  * @package    tool_cohortdatabase
  * @author     Dan Marsden
@@ -55,10 +49,6 @@ Options:
 
 Example:
 \$ sudo -u www-data /usr/bin/php admin/tool/cohortdatabase/cli/sync.php
-
-Sample cron entry:
-# 5 minutes past 4am
-5 4 * * * sudo -u www-data /usr/bin/php /var/www/moodle/admin/tool/cohortdatabase/cli/sync.php
 ";
 
     echo $help;
