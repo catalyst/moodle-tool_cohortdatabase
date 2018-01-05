@@ -76,6 +76,7 @@ class tool_cohortdatabase_sync {
         $remotecreateusersemail = trim($this->config->createusers_email);
         $remotecreateusersfirstname = trim($this->config->createusers_firstname);
         $remotecreateuserslastname = trim($this->config->createusers_lastname);
+        $remotecreateusersidnumber = trim($this->config->createusers_idnumber);
         $remotecreateusersauth = trim($this->config->createusers_auth);
 
         // Lowercased versions - necessary because we normalise the resultset with array_change_key_case().
@@ -282,6 +283,9 @@ class tool_cohortdatabase_sync {
                 // Get user info from external db.
                 $fields = array($remotecreateusersusername, $remotecreateusersemail,
                                 $remotecreateusersfirstname, $remotecreateuserslastname);
+                if (!empty($remotecreateusersidnumber)) {
+                    $fields[] = $remotecreateusersidnumber;
+                }
                 $sql = "SELECT DISTINCT ".implode(",", $fields)."
                   FROM $cohorttable WHERE $remoteuserfield IN ('".implode("','", $missingusers)."')";
                 if ($rs = $extdb->Execute($sql)) {
@@ -291,6 +295,9 @@ class tool_cohortdatabase_sync {
                             $user->email = $fields[$remotecreateusersemail];
                             $user->firstname = $fields[$remotecreateusersfirstname];
                             $user->lastname = $fields[$remotecreateuserslastname];
+                            if (!empty($remotecreateusersidnumber)) {
+                                $user->idnumber = $fields[$remotecreateusersidnumber];
+                            }
                             user_update_user($user, false, false);
                             $createdusers++;
                         }

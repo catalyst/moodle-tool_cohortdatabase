@@ -141,6 +141,10 @@ if ($hassiteconfig) {
         get_string('createusers_lastname', 'tool_cohortdatabase'),
         get_string('createusers_lastname_desc', 'tool_cohortdatabase'), ''));
 
+    $settings->add(new admin_setting_configtext('tool_cohortdatabase/createusers_idnumber',
+        get_string('createusers_idnumber', 'tool_cohortdatabase'),
+        get_string('createusers_idnumber_desc', 'tool_cohortdatabase'), ''));
+
     // Get list of Auth plugins and make the key => value.
     $plugins = core_component::get_plugin_list('auth');
     $keys = array_keys($plugins);
