@@ -251,11 +251,23 @@ class tool_cohortdatabase_sync {
             }
             if (empty($removeaction) && !empty($currentusers)) {
                 // Delete users no longer in cohort.
+                // Using core function for this is very slow (one by one) - use bulk delete instead.
                 list($csql, $params) = $DB->get_in_or_equal($currentusers);
                 $sql = "userid $csql AND cohortid = ?";
                 $params[] = $cohort->id;
                 $DB->delete_records_select('cohort_members', $sql, $params);
                 $trace->output('Bulk delete of '.count($currentusers).' users from cohortid'.$cohort->id);
+
+                // Trigger removed events - used by enrolment plugins etc.
+                foreach ($currentusers as $removedid) {
+                    $event = \core\event\cohort_member_removed::create(array(
+                        'context' => context::instance_by_id($cohort->contextid),
+                        'objectid' => $cohort->id,
+                        'relateduserid' => $removedid,
+                    ));
+                    $event->add_record_snapshot('cohort', $cohort);
+                    $event->trigger();
+                }
             }
         }
         // We do this at the very end so we can batch process all inserts for speed.
@@ -306,9 +318,21 @@ class tool_cohortdatabase_sync {
                 $trace->output("Created $createdusers new users");
             }
 
-            // Now insert the records.
+            // Now insert the records (using core function for this is very slow - use bulk insert instead.
             $DB->insert_records('cohort_members', $newmembers);
             $trace->output('Bulk insert of '.count($newmembers).' new members');
+
+            // Trigger events used by cohort sync plugins etc.
+            foreach ($newmembers as $newm) {
+                $cohort = $cohorts[$newm->cohortid];
+                $event = \core\event\cohort_member_added::create(array(
+                    'context' => context::instance_by_id($cohort->contextid),
+                    'objectid' => $newm->cohortid,
+                    'relateduserid' => $newm->userid,
+                ));
+                $event->add_record_snapshot('cohort', $cohort);
+                $event->trigger();
+            }
         }
 
         $extdb->Close();
