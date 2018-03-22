@@ -70,7 +70,7 @@ class tool_cohortdatabase_sync {
         $remotecohortidfield   = trim($this->config->remotecohortidfield);
         $remotecohortnamefield = trim($this->config->remotecohortnamefield);
         $remotecohortdescfield = trim($this->config->remotecohortdescfield);
-        $removeaction          = trim($this->config->removeaction);
+        $removeaction          = trim($this->config->removeaction); // Should rename this (0 = remove, 1 = keep).
         $createusers           = trim($this->config->createusers);
         $remotecreateusersusername = trim($this->config->createusers_username);
         $remotecreateusersemail = trim($this->config->createusers_email);
@@ -221,6 +221,10 @@ class tool_cohortdatabase_sync {
                       JOIN {cohort_members} c ON c.userid = u.id
                      WHERE c.cohortid = ?";
             $currentusers = $DB->get_records_sql_menu($sql, array($cohort->id));
+
+            // Only remove users if we have found the external cohort - this does mean that empty cohorts won't be cleaned out.
+            // This is done for safety reasons - in case the external db connection fails weirdly and returns an empty result.
+            $foundexternalcohort = false;
             // Now get records from external table.
             $sqlfields = array($remoteuserfield);
             $sql = $this->db_get_sql($cohorttable, array($remotecohortidfield => $cohort->idnumber), $sqlfields, true);
@@ -234,6 +238,7 @@ class tool_cohortdatabase_sync {
                             $trace->output('error: invalid external cohort record, user fields is mandatory: ' . json_encode($fields), 1); // Hopefully every geek can read JS, right?
                             continue;
                         }
+                        $foundexternalcohort = true;
                         if (!empty($currentusers[$fields[$remoteuserfieldl]])) {
                             // This user is already a member of the cohort.
                             unset($currentusers[$fields[$remoteuserfieldl]]);
@@ -249,7 +254,7 @@ class tool_cohortdatabase_sync {
                     }
                 }
             }
-            if (empty($removeaction) && !empty($currentusers)) {
+            if ($foundexternalcohort && empty($removeaction) && !empty($currentusers)) {
                 // Delete users no longer in cohort.
                 // Using core function for this is very slow (one by one) - use bulk delete instead.
                 list($csql, $params) = $DB->get_in_or_equal($currentusers);
