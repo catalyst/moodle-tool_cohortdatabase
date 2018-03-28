@@ -122,7 +122,7 @@ class tool_cohortdatabase_sync {
 
         // Get list of current cohorts indexed by idnumber.
         $cohortrecords = $DB->get_records('cohort', array('component' => 'tool_cohortdatabase'),
-            '', 'idnumber, id, name, description');
+            '', 'idnumber, id, name, description, contextid');
         $cohorts = array();
         foreach ($cohortrecords as $cohort) {
             // Index the cohorts using idnumber for easy processing.
