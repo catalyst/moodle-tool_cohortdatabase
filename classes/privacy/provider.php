@@ -15,18 +15,34 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Database enrolment plugin version specification.
+ * Privacy Subsystem implementation for tool_cohortdatabase.
  *
- * @package    tool_cohortdatabase
+ * @package    tool_capability
+ * @copyright  2018 Catalyst IT
  * @author     Dan Marsden
- * @copyright  2017 Catalyst IT
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+namespace tool_cohortdatabase\privacy;
+
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2018061101;        // The current plugin version (Date: YYYYMMDDXX).
-$plugin->requires  = 2017111300; // Requires 3.4.
-$plugin->component = 'tool_cohortdatabase';
-$plugin->maturity = MATURITY_STABLE;
-$plugin->release = "2";
+/**
+ * Privacy Subsystem for tool_cohortdatabase implementing null_provider.
+ *
+ * @copyright  2018 Catalyst IT
+ * @author     Dan Marsden
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class provider implements \core_privacy\local\metadata\null_provider {
+
+    /**
+     * Get the language string identifier with the component's language
+     * file to explain why this plugin stores no data.
+     *
+     * @return  string
+     */
+    public static function get_reason() : string {
+        return 'privacy:metadata';
+    }
+}

@@ -74,3 +74,4 @@ $string['createusers_auth_desc'] = 'The authentication type to set for these use
 $string['sync'] = 'Sync cohorts with external database';
 $string['minrecords'] = 'Minimum records';
 $string['minrecords_desc'] = 'Prevent the sync from running if the number of records returned in the external table is below this number (helps to prevent removal of users when the external table is empty).';
+$string['privacy:metadata'] = 'The Cohort database plugin does not store any personal data.';
