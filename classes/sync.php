@@ -308,6 +308,13 @@ class tool_cohortdatabase_sync {
                 if ($rs = $extdb->Execute($sql)) {
                     if (!$rs->EOF) {
                         while ($fields = $rs->FetchRow()) {
+                            if ($remotecreateusersauth == 'shibboleth'){ // if shibboleth authentication
+                                //Shibboleth attributes definition :
+                                $_SERVER[$this->config->createusers_username] = $fields[$remotecreateusersusername];
+                                $_SERVER[$this->config->createusers_firstname] = $fields[$remotecreateusersfirstname];
+                                $_SERVER[$this->config->createusers_lastname] = $fields[$remotecreateuserslastname];
+                                $_SERVER[$this->config->createusers_email] = $fields[$remotecreateusersemail];
+                            }
                             $user = create_user_record($fields[$remotecreateusersusername], '', $remotecreateusersauth);
                             $user->email = $fields[$remotecreateusersemail];
                             $user->firstname = $fields[$remotecreateusersfirstname];
