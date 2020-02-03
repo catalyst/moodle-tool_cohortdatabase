@@ -101,13 +101,13 @@ class tool_cohortdatabase_sync {
         $hasenoughrecords = false;
         $count = 0;
         $minrecords = $this->config->minrecords;
-        if (isset($minrecords) && ($minrecords !== false)) {
+        if (!empty($minrecords)) {
             $sql = "SELECT count(*) FROM $cohorttable";
             if ($rs = $extdb->Execute($sql)) {
                 if (!$rs->EOF) {
                     while ($fields = $rs->FetchRow()) {
                         $count = array_pop($fields);
-                        if ($count > $minrecords) {
+                        if ($count >= $minrecords) {
                             $hasenoughrecords = true;
                         }
                     }
