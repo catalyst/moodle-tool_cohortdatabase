@@ -329,13 +329,11 @@ class tool_cohortdatabase_sync {
 
             // Trigger events used by cohort sync plugins etc.
             foreach ($newmembers as $newm) {
-                $cohort = $cohorts[$newm->cohortid];
                 $event = \core\event\cohort_member_added::create(array(
-                    'context' => context::instance_by_id($cohort->contextid),
+                    'context' => context_system::instance(),
                     'objectid' => $newm->cohortid,
                     'relateduserid' => $newm->userid,
                 ));
-                $event->add_record_snapshot('cohort', $cohort);
                 $event->trigger();
             }
         }
