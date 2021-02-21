@@ -135,6 +135,7 @@ class tool_cohortdatabase_sync {
         // First check/create all cohorts.
         $cohortsupdated = 0;
         $newcohorts = array();
+        $newcohortids = array(); // List of idnumbers for newcohorts.
         $now = time();
         $sqlfields = array($remotecohortidfield, $remotecohortnamefield);
         if (!empty($remotecohortdescfield)) {
@@ -172,20 +173,24 @@ class tool_cohortdatabase_sync {
                     } else {
                         // Need to create this cohort.
                         $newcohort = new stdClass();
-                        $newcohort->name = trim($fields[$remotecohortnamefieldl]);
                         $newcohort->idnumber = trim($fields[$remotecohortidfieldl]);
-                        if (!empty($remotecohortdescfield)) {
-                            $newcohort->description = trim($fields[$remotecohortdescfieldl]);
-                        }
-                        $newcohort->component = 'tool_cohortdatabase';
-                        $newcohort->timecreated = $now;
-                        $newcohort->timemodified = $now;
-                        $newcohort->visible = 1;
-                        $newcohort->contextid = $sysctxt->id;
-                        $newcohort->descriptionformat = FORMAT_HTML;
+                        if (!in_array($newcohort->idnumber, $newcohortids)) {
+                            $newcohort->name = trim($fields[$remotecohortnamefieldl]);
 
-                        // Put into array so we can use insert_records in bulk.
-                        $newcohorts[] = $newcohort;
+                            if (!empty($remotecohortdescfield)) {
+                                $newcohort->description = trim($fields[$remotecohortdescfieldl]);
+                            }
+                            $newcohort->component = 'tool_cohortdatabase';
+                            $newcohort->timecreated = $now;
+                            $newcohort->timemodified = $now;
+                            $newcohort->visible = 1;
+                            $newcohort->contextid = $sysctxt->id;
+                            $newcohort->descriptionformat = FORMAT_HTML;
+
+                            // Put into array so we can use insert_records in bulk.
+                            $newcohorts[] = $newcohort;
+                            $newcohortids[] = $newcohort->idnumber;
+                        }
                     }
                 }
             }
