@@ -107,7 +107,7 @@ class tool_cohortdatabase_sync {
                 if (!$rs->EOF) {
                     while ($fields = $rs->FetchRow()) {
                         $count = array_pop($fields);
-                        if ($count > $minrecords) {
+                        if ($count >= $minrecords) {
                             $hasenoughrecords = true;
                         }
                     }
