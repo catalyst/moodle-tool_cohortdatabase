@@ -74,4 +74,6 @@ $string['createusers_auth_desc'] = 'The authentication type to set for these use
 $string['sync'] = 'Sync cohorts with external database';
 $string['minrecords'] = 'Minimum records';
 $string['minrecords_desc'] = 'Prevent the sync from running if the number of records returned in the external table is below this number (helps to prevent removal of users when the external table is empty).';
+$string['maxremovals'] = 'Maximum removals';
+$string['maxremovals_desc'] = 'Stop the sync from running and email admins if the number of cohort removals exceeds this number (helps to prevent accidental removal of lots of users). If set to 0 it will be ignored.';
 $string['privacy:metadata'] = 'The Cohort database plugin does not store any personal data.';

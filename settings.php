@@ -77,9 +77,13 @@ if ($hassiteconfig) {
 
     $settings->add(new admin_setting_configtext('tool_cohortdatabase/minrecords',
         get_string('minrecords', 'tool_cohortdatabase'),
-        get_string('minrecords_desc', 'tool_cohortdatabase'), 1));
+        get_string('minrecords_desc', 'tool_cohortdatabase'), 10));
 
-    $settings->add(new admin_setting_heading('tool_cohortdatabase_localheader',
+    $settings->add(new admin_setting_configtext('tool_cohortdatabase/maxremovals',
+        get_string('maxremovals', 'tool_cohortdatabase'),
+        get_string('maxremovals_desc', 'tool_cohortdatabase'), 500));
+
+        $settings->add(new admin_setting_heading('tool_cohortdatabase_localheader',
         get_string('settingsheaderlocal', 'tool_cohortdatabase'), ''));
 
     // Only local users if username selected, no mnet users!
