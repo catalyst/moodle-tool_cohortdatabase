@@ -267,10 +267,14 @@ class tool_cohortdatabase_sync {
                 }
             }
             if ($foundexternalcohort && empty($removeaction) && !empty($currentusers)) {
-                if (!empty($this->config->maxremovals) && $countdeletes > $this->config->maxremovals) {
-                    $message = "The cohort sync process has removed $countdeletes members,
-                                this exceeds the max removal threshold of {$this->config->maxremovals} so the process was stopped.
-                                If this is unexpected you should check the validity of the data or it will continue removal on next cron.";
+                $todelete = count($currentusers);
+                if (!empty($this->config->maxremovals) && ($countdeletes + $todelete) > ($this->config->maxremovals)) {
+                    $a = new \stdClass();
+                    $a->countdeletes = $countdeletes;
+                    $a->todelete = $todelete;
+                    $a->maxremovals = $this->config->maxremovals;
+                    $a->cohortid = $cohort->id;
+                    $message = get_string('maxremovalsexceeded', 'tool_cohortdatabase', $a);
                     $this->email_admins($message);
                     mtrace($message);
                     $trace->finished();
@@ -566,17 +570,21 @@ class tool_cohortdatabase_sync {
     }
 
     /**
-     * Helper function to email site-admins on failure.
+     * Helper function to email users on failure.
      * @param string $message
      */
     protected function email_admins($message) {
         global $DB, $CFG;
-        $users = $DB->get_records_list('user', 'id', explode(',', $CFG->siteadmins));
-        foreach ($users as $user) {
+        if (empty($this->config->erroremails)) {
+            return;
+        } else if ($this->config->erroremails == 'support') {
+            $user = \core_user::get_support_user();
             email_to_user($user, $user, 'tool_cohortdatbase error', $message);
+        } else if ($this->config->erroremails == 'alladmins') {
+            $users = $DB->get_records_list('user', 'id', explode(',', $CFG->siteadmins));
+            foreach ($users as $user) {
+                email_to_user($user, $user, 'tool_cohortdatbase error', $message);
+            }
         }
     }
 }
-
-
-

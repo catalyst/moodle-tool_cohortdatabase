@@ -83,7 +83,15 @@ if ($hassiteconfig) {
         get_string('maxremovals', 'tool_cohortdatabase'),
         get_string('maxremovals_desc', 'tool_cohortdatabase'), 500));
 
-        $settings->add(new admin_setting_heading('tool_cohortdatabase_localheader',
+    $options = ['' => get_string('disabled', 'tool_cohortdatabase'),
+                'support' => get_string('supportuser', 'tool_cohortdatabase'),
+                'alladmins' => get_string('alladmins', 'tool_cohortdatabase')];
+
+    $settings->add(new admin_setting_configselect('tool_cohortdatabase/erroremails',
+        get_string('erroremails', 'tool_cohortdatabase'),
+        get_string('erroremails_desc', 'tool_cohortdatabase'), '', $options));
+
+    $settings->add(new admin_setting_heading('tool_cohortdatabase_localheader',
         get_string('settingsheaderlocal', 'tool_cohortdatabase'), ''));
 
     // Only local users if username selected, no mnet users!
