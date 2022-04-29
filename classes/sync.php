@@ -231,8 +231,6 @@ class tool_cohortdatabase_sync {
             $currentusers = $DB->get_records_sql_menu($sql, array($cohort->id));
             $currentusers = array_change_key_case($currentusers); // Convert key to lowercase.
 
-            // Only remove users if we have found the external cohort - this does mean that empty cohorts won't be cleaned out.
-            // This is done for safety reasons - in case the external db connection fails weirdly and returns an empty result.
             $foundexternalcohort = false;
             // Now get records from external table.
             $sqlfields = array($remoteuserfield);
@@ -263,6 +261,13 @@ class tool_cohortdatabase_sync {
                         }
                     }
                 }
+            }
+
+            // Only remove users if we have found the external cohort - this does mean that empty cohorts won't be cleaned out.
+            // This is done for safety reasons - in case the external db connection fails weirdly and returns an empty result.
+            if (empty($this->config->preventemptycohortremoval)) {
+                // If preventemptycohortremoval is set to 0, allow removal of empty cohorts.
+                $foundexternalcohort = true;
             }
             if ($foundexternalcohort && empty($removeaction) && !empty($currentusers)) {
                 $todelete = count($currentusers);
@@ -608,7 +613,7 @@ class tool_cohortdatabase_sync {
     /**
      * Get cohorts indexed by idnumber for easy processing.
      *
-     * @return void
+     * @return array()
      */
     protected function get_cohorts() {
         global $DB;
