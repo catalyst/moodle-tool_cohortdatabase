@@ -22,13 +22,13 @@
  */
 defined('MOODLE_INTERNAL') || die();
 
-$tasks = array(
-    array(
-        'classname' => 'tool_cohortdatabase\task\sync',
-        'blocking' => 0,
-        'minute' => '15',
-        'hour' => '1',
-        'day' => '*',
-        'dayofweek' => '*',
-        'month' => '*')
-);
+$tasks = [
+    ['classname' => 'tool_cohortdatabase\task\sync',
+     'blocking' => 0,
+     'minute' => '15',
+     'hour' => '1',
+     'day' => '*',
+     'dayofweek' => '*',
+     'month' => '*'
+    ],
+];

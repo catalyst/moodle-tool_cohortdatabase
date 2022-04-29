@@ -86,3 +86,5 @@ $string['disabled'] = 'Disabled';
 $string['erroremails'] = 'Email on error';
 $string['erroremails_desc'] = 'When an error during sync occurs, email these users';
 $string['privacy:metadata'] = 'The Cohort database plugin does not store any personal data.';
+$string['preventemptycohortremoval'] = 'Prevent empty cohort removal';
+$string['preventemptycohortremoval_desc'] = 'If set to yes, if a cohort does not exist in the external source, it will ignore the sync process for that cohort. This is done for safety reasons - in case the external db connection fails weirdly and returns an empty result for a specific cohort.';

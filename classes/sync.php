@@ -123,14 +123,7 @@ class tool_cohortdatabase_sync {
         }
 
         // Get list of current cohorts indexed by idnumber.
-        $cohortrecords = $DB->get_records('cohort', array('component' => 'tool_cohortdatabase'),
-            '', 'idnumber, id, name, description, contextid, descriptionformat, visible, component, timecreated, timemodified, theme');
-        $cohorts = array();
-        foreach ($cohortrecords as $cohort) {
-            // Index the cohorts using idnumber for easy processing.
-            $cohorts[$cohort->idnumber] = $cohort;
-        }
-        $cohortrecords = null; // We don't need cohortrecords anymore.
+        $cohorts = $this->get_cohorts();
 
         $sysctxt = context_system::instance();
 
@@ -202,8 +195,6 @@ class tool_cohortdatabase_sync {
             if (!empty($newcohorts)) {
                 $DB->insert_records('cohort', $newcohorts);
                 $trace->output('Bulk insert of '.count($newcohorts).' new cohorts');
-                // We don't need $newcohorts anymore - set to null to help with overall php memory usage.
-                $newcohorts = null;
             }
         } else {
             $extdb->Close();
@@ -212,6 +203,13 @@ class tool_cohortdatabase_sync {
             $trace->output($message);
             $trace->finished();
             return 4;
+        }
+
+        if (!empty($newcohorts)) {
+            // New cohorts have been added, get the full updated list.
+            $cohorts = $this->get_cohorts();
+            // We don't need $newcohorts anymore - set to null to help with overall php memory usage.
+            $newcohorts = null;
         }
 
         $trace->output('Starting cohort database user sync');
@@ -233,8 +231,6 @@ class tool_cohortdatabase_sync {
             $currentusers = $DB->get_records_sql_menu($sql, array($cohort->id));
             $currentusers = array_change_key_case($currentusers); // Convert key to lowercase.
 
-            // Only remove users if we have found the external cohort - this does mean that empty cohorts won't be cleaned out.
-            // This is done for safety reasons - in case the external db connection fails weirdly and returns an empty result.
             $foundexternalcohort = false;
             // Now get records from external table.
             $sqlfields = array($remoteuserfield);
@@ -265,6 +261,13 @@ class tool_cohortdatabase_sync {
                         }
                     }
                 }
+            }
+
+            // Only remove users if we have found the external cohort - this does mean that empty cohorts won't be cleaned out.
+            // This is done for safety reasons - in case the external db connection fails weirdly and returns an empty result.
+            if (empty($this->config->preventemptycohortremoval)) {
+                // If preventemptycohortremoval is set to 0, allow removal of empty cohorts.
+                $foundexternalcohort = true;
             }
             if ($foundexternalcohort && empty($removeaction) && !empty($currentusers)) {
                 $todelete = count($currentusers);
@@ -374,6 +377,8 @@ class tool_cohortdatabase_sync {
         }
 
         $extdb->Close();
+
+        $this->cleanup();
         return 0;
     }
 
@@ -586,5 +591,39 @@ class tool_cohortdatabase_sync {
                 email_to_user($user, $user, 'tool_cohortdatbase error', $message);
             }
         }
+    }
+
+    /**
+     * Function to delete empty unused cohorts created by this plugin.
+     *
+     * @return void
+     */
+    protected function cleanup() {
+        global $DB;
+        // Clean up empty cohorts created by this plugin that are not in use by enrolment plugins.
+        $sql = "DELETE FROM {cohort}
+                 WHERE id in (SELECT c.id
+                                FROM {cohort} c
+                           LEFT JOIN {cohort_members} cm ON cm.cohortid = c.id
+                               WHERE component = 'tool_cohortdatabase' AND cm.id is null
+                                     AND c.id NOT IN (select customint1 from {enrol} where enrol = 'cohort'))";
+        $DB->execute($sql);
+    }
+
+    /**
+     * Get cohorts indexed by idnumber for easy processing.
+     *
+     * @return array()
+     */
+    protected function get_cohorts() {
+        global $DB;
+        $cohortrecords = $DB->get_records('cohort', array('component' => 'tool_cohortdatabase'),
+            '', 'idnumber, id, name, description, contextid, descriptionformat, visible, component, timecreated, timemodified, theme');
+        $cohorts = [];
+        foreach ($cohortrecords as $cohort) {
+            // Index the cohorts using idnumber for easy processing.
+            $cohorts[$cohort->idnumber] = $cohort;
+        }
+        return $cohorts;
     }
 }
