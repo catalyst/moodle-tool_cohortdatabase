@@ -129,10 +129,11 @@ if ($hassiteconfig) {
         get_string('removedaction_desc', 'tool_cohortdatabase'), 0, $options));
 
     $options = [0 => get_string('no'),
-                1 => get_string('yes')];
-    $settings->add(new admin_setting_configselect('tool_cohortdatabase/preventemptycohortremoval',
-        get_string('preventemptycohortremoval', 'tool_cohortdatabase'),
-        get_string('preventemptycohortremoval_desc', 'tool_cohortdatabase'), 1, $options));
+                1 => get_string('yes'),
+                1 => get_string('ifnotinuse', 'tool_cohortdatabase')];
+    $settings->add(new admin_setting_configselect('tool_cohortdatabase/emptycohortremoval',
+        get_string('emptycohortremoval', 'tool_cohortdatabase'),
+        get_string('emptycohortremoval_desc', 'tool_cohortdatabase'), 0, $options));
 
     $settings->add(new admin_setting_heading('tool_cohortdatabase_createusers',
         get_string('settingscreateusers', 'tool_cohortdatabase'), ''));
