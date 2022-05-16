@@ -86,5 +86,9 @@ $string['disabled'] = 'Disabled';
 $string['erroremails'] = 'Email on error';
 $string['erroremails_desc'] = 'When an error during sync occurs, email these users';
 $string['privacy:metadata'] = 'The Cohort database plugin does not store any personal data.';
-$string['preventemptycohortremoval'] = 'Prevent empty cohort removal';
-$string['preventemptycohortremoval_desc'] = 'If set to yes, if a cohort does not exist in the external source, it will ignore the sync process for that cohort. This is done for safety reasons - in case the external db connection fails weirdly and returns an empty result for a specific cohort.';
+$string['emptycohortremoval'] = 'Delete empty cohorts';
+$string['emptycohortremoval_desc'] = 'If set to no, if a cohort does not exist in the external source, it will ignore the sync process for that cohort. This is done for safety reasons - in case the external db connection fails weirdly and returns an empty result for a specific cohort.
+If set to not in use, it will only delete if the cohort is not attached to a cohort sync enrolment instance in a course.';
+$string['ifnotinuse'] = 'If not attached to a cohort enrolment.';
+$string['remotecohortdescupdate'] = 'Update description on sync';
+$string['remotecohortdescupdate_desc'] = 'If set to yes, the description field will be updated in Moodle if it is different in the external Db.';

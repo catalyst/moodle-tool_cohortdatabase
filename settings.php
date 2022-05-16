@@ -122,6 +122,12 @@ if ($hassiteconfig) {
         get_string('remotecohortdescfield', 'tool_cohortdatabase'),
         get_string('remotecohortdescfield_desc', 'tool_cohortdatabase'), ''));
 
+    $options = array(0 => get_string('no'),
+                     1 => get_string('yes'));
+    $settings->add(new admin_setting_configselect('tool_cohortdatabase/remotecohortdescupdate',
+        get_string('remotecohortdescupdate', 'tool_cohortdatabase'),
+        get_string('remotecohortdescupdate_desc', 'tool_cohortdatabase'), 0, $options));
+
     $options = array(0  => get_string('removefromcohort', 'tool_cohortdatabase'),
                      1  => get_string('keepincohort', 'tool_cohortdatabase'));
     $settings->add(new admin_setting_configselect('tool_cohortdatabase/removeaction',
@@ -129,10 +135,11 @@ if ($hassiteconfig) {
         get_string('removedaction_desc', 'tool_cohortdatabase'), 0, $options));
 
     $options = [0 => get_string('no'),
-                1 => get_string('yes')];
-    $settings->add(new admin_setting_configselect('tool_cohortdatabase/preventemptycohortremoval',
-        get_string('preventemptycohortremoval', 'tool_cohortdatabase'),
-        get_string('preventemptycohortremoval_desc', 'tool_cohortdatabase'), 1, $options));
+                1 => get_string('yes'),
+                2 => get_string('ifnotinuse', 'tool_cohortdatabase')];
+    $settings->add(new admin_setting_configselect('tool_cohortdatabase/emptycohortremoval',
+        get_string('emptycohortremoval', 'tool_cohortdatabase'),
+        get_string('emptycohortremoval_desc', 'tool_cohortdatabase'), 0, $options));
 
     $settings->add(new admin_setting_heading('tool_cohortdatabase_createusers',
         get_string('settingscreateusers', 'tool_cohortdatabase'), ''));

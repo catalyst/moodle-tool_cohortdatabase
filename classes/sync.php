@@ -157,11 +157,13 @@ class tool_cohortdatabase_sync {
                         // If this cohort exists, check to see if it needs name/description updated.
                         $existingcohort = $cohorts[$fields[$remotecohortidfieldl]];
                         if ($existingcohort->name <> $fields[$remotecohortnamefieldl] ||
-                            (!empty($remotecohortdescfield) && $existingcohort->description <> $fields[$remotecohortdescfieldl])) {
-                            $existingcohort->name = $fields[$remotecohortnamefieldl];
-                            if (!empty($remotecohortdescfield)) {
+                            (!empty($remotecohortdescfield) && !empty($this->config->remotecohortdescupdate) &&
+                             $existingcohort->description <> $fields[$remotecohortdescfieldl])) {
+                                $existingcohort->name = $fields[$remotecohortnamefieldl];
+                            if (!empty($remotecohortdescfield) && !empty($this->config->remotecohortdescupdate)) {
                                 $existingcohort->description = $fields[$remotecohortdescfieldl];
                             }
+
                             $DB->update_record('cohort', $existingcohort);
                             $cohortsupdated++;
                         }
@@ -263,11 +265,18 @@ class tool_cohortdatabase_sync {
                 }
             }
 
-            // Only remove users if we have found the external cohort - this does mean that empty cohorts won't be cleaned out.
-            // This is done for safety reasons - in case the external db connection fails weirdly and returns an empty result.
-            if (empty($this->config->preventemptycohortremoval)) {
-                // If preventemptycohortremoval is set to 0, allow removal of empty cohorts.
-                $foundexternalcohort = true;
+            // If the cohort isn't found in external source, we only remove the cohort and users depending on settings.
+            if (!$foundexternalcohort && !empty($this->config->emptycohortremoval)) {
+                if ((int)$this->config->emptycohortremoval == 1) {
+                    // If emptycohortremoval is set to 1, allow removal of empty cohorts.
+                    $foundexternalcohort = true;
+                } else if ($this->config->emptycohortremoval == 2) {
+                    // If emptycohortremoval is set to 2, allow removal if not in use.
+                    if (!$DB->record_exists('enrol', ['enrol' => 'cohort', 'customint1' => $cohort->id])) {
+                        // Check if this cohort is used by an enrolment sync.
+                        $foundexternalcohort = true;
+                    }
+                }
             }
             if ($foundexternalcohort && empty($removeaction) && !empty($currentusers)) {
                 $todelete = count($currentusers);
@@ -306,78 +315,74 @@ class tool_cohortdatabase_sync {
         }
         // We do this at the very end so we can batch process all inserts for speed.
         if (!empty($newmembers)) {
-            // First we need to map the userid in external table with userid in moodle..
-            $sqlin = '';
-            $params = [];
-            foreach ($needusers as $need) {
-                if (!empty($sqlin)) {
-                    $sqlin .= " OR ";
-                }
-                $sqlin .= $DB->sql_equal($localuserfield, '?', false);
-                $params[] = $need;
-            }
-            $sql = "SELECT ".$localuserfield.", id
-                      FROM {user} u
-                     WHERE ".$sqlin;
-            $currentusers = $DB->get_records_sql_menu($sql, $params);
-            $currentusers = array_change_key_case($currentusers);
-            foreach ($newmembers as $id => $newmember) {
-                if (empty($currentusers[strtolower($newmember->userid)])) {
-                    // This is a new user, we need to create.
-                    $missingusers[$newmember->userid] = $newmember->userid;
-                    unset($newmembers[$id]); // Cannot insert these members yet.
-                    $trace->output('Could not find user with '.$localuserfield.' = '.$newmember->userid);
-                } else {
-                    $newmembers[$id]->userid = $currentusers[strtolower($newmember->userid)];
-                }
-            }
-
-            // Now check if users are supposed to be created.
-            $createdusers = 0;
-            if ($createusers && !empty($missingusers)) {
-                // Get user info from external db.
-                $fields = array($remotecreateusersusername, $remotecreateusersemail,
-                                $remotecreateusersfirstname, $remotecreateuserslastname);
-                if (!empty($remotecreateusersidnumber)) {
-                    $fields[] = $remotecreateusersidnumber;
-                }
-                $sql = "SELECT DISTINCT ".implode(",", $fields)."
-                  FROM $cohorttable WHERE $remoteuserfield IN ('".implode("','", $missingusers)."')";
-                if ($rs = $extdb->Execute($sql)) {
-                    if (!$rs->EOF) {
-                        while ($fields = $rs->FetchRow()) {
-                            $user = create_user_record($fields[$remotecreateusersusername], '', $remotecreateusersauth);
-                            $user->email = $fields[$remotecreateusersemail];
-                            $user->firstname = $fields[$remotecreateusersfirstname];
-                            $user->lastname = $fields[$remotecreateuserslastname];
-                            if (!empty($remotecreateusersidnumber)) {
-                                $user->idnumber = $fields[$remotecreateusersidnumber];
-                            }
-                            user_update_user($user, false, false);
-                            $createdusers++;
-                        }
+            // Split into chunks to prevent long proceses from dying and nothing being done.
+            $chunksize = 500; // Using 500 as this is the max allowed in one chunk for insert_records in pg anyway.
+            $memberchunks = array_chunk($newmembers, $chunksize, true);
+            foreach ($memberchunks as $members) {
+                // First we need to map the userid in external table with userid in moodle..
+                foreach ($members as $id => $newmember) {
+                    $sql = "SELECT ".$localuserfield.", id
+                            FROM {user} u
+                            WHERE ".
+                            $DB->sql_equal($localuserfield, '?', false);
+                    $currentuser = $DB->get_record_sql($sql, [$newmember->userid]);
+                    if (empty($currentuser)) {
+                        // This is a new user, we need to create.
+                        $missingusers[$newmember->userid] = $newmember->userid;
+                        unset($members[$id]); // Cannot insert these members yet.
+                        $trace->output('Could not find user with '.$localuserfield.' = '.$newmember->userid);
+                    } else {
+                        $members[$id]->userid = $currentuser->id;
                     }
                 }
-                $trace->output("Created $createdusers new users");
-            }
 
-            // Now insert the records (using core function for this is very slow - use bulk insert instead.
-            $DB->insert_records('cohort_members', $newmembers);
-            $trace->output('Bulk insert of '.count($newmembers).' new members');
+                // Now check if users are supposed to be created.
+                $createdusers = 0;
+                if ($createusers && !empty($missingusers)) {
+                    // Get user info from external db.
+                    $fields = array($remotecreateusersusername, $remotecreateusersemail,
+                                    $remotecreateusersfirstname, $remotecreateuserslastname);
+                    if (!empty($remotecreateusersidnumber)) {
+                        $fields[] = $remotecreateusersidnumber;
+                    }
+                    $sql = "SELECT DISTINCT ".implode(",", $fields)."
+                              FROM $cohorttable WHERE $remoteuserfield IN ('".implode("','", $missingusers)."')";
+                    if ($rs = $extdb->Execute($sql)) {
+                        if (!$rs->EOF) {
+                            while ($fields = $rs->FetchRow()) {
+                                $user = create_user_record($fields[$remotecreateusersusername], '', $remotecreateusersauth);
+                                $user->email = $fields[$remotecreateusersemail];
+                                $user->firstname = $fields[$remotecreateusersfirstname];
+                                $user->lastname = $fields[$remotecreateuserslastname];
+                                if (!empty($remotecreateusersidnumber)) {
+                                    $user->idnumber = $fields[$remotecreateusersidnumber];
+                                }
+                                user_update_user($user, false, false);
+                                $createdusers++;
+                            }
+                        }
+                    }
+                    $trace->output("Created $createdusers new users");
+                }
 
-            // Trigger events used by cohort sync plugins etc.
-            foreach ($newmembers as $newm) {
-                $event = \core\event\cohort_member_added::create(array(
-                    'context' => context_system::instance(),
-                    'objectid' => $newm->cohortid,
-                    'relateduserid' => $newm->userid,
-                ));
-                $event->trigger();
+                // Now insert the records (using core function for this is very slow - use bulk insert instead.
+                $DB->insert_records('cohort_members', $members);
+                $trace->output('Bulk insert of '.count($members).' new members');
+
+                // Trigger events used by cohort sync plugins etc.
+                foreach ($members as $newm) {
+                    $event = \core\event\cohort_member_added::create(array(
+                        'context' => context_system::instance(),
+                        'objectid' => $newm->cohortid,
+                        'relateduserid' => $newm->userid,
+                    ));
+                    $event->trigger();
+                }
             }
         }
 
         $extdb->Close();
-
+        $trace->finished();
         $this->cleanup();
         return 0;
     }
