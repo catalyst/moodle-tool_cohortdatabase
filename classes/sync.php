@@ -589,11 +589,11 @@ class tool_cohortdatabase_sync {
             return;
         } else if ($this->config->erroremails == 'support') {
             $user = \core_user::get_support_user();
-            email_to_user($user, $user, 'tool_cohortdatbase error', $message);
+            email_to_user($user, $user, 'tool_cohortdatabase error', $message);
         } else if ($this->config->erroremails == 'alladmins') {
             $users = $DB->get_records_list('user', 'id', explode(',', $CFG->siteadmins));
             foreach ($users as $user) {
-                email_to_user($user, $user, 'tool_cohortdatbase error', $message);
+                email_to_user($user, $user, 'tool_cohortdatabase error', $message);
             }
         }
     }
