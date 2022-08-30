@@ -25,8 +25,6 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Cohortdatabase tool class
  *
@@ -142,8 +140,9 @@ class tool_cohortdatabase_sync {
                 while ($fields = $rs->FetchRow()) {
                     $fields = array_change_key_case($fields, CASE_LOWER);
                     $fields = $this->db_decode($fields);
-                    if (empty($fields[$remotecohortidfieldl]) or empty($fields[$remotecohortnamefieldl])) {
-                        $trace->output('error: invalid external cohort record, id and name are mandatory: ' . json_encode($fields), 1); // Hopefully every geek can read JS, right?
+                    if (empty($fields[$remotecohortidfieldl]) || empty($fields[$remotecohortnamefieldl])) {
+                        $trace->output('error: invalid external cohort record, id and name are mandatory: '
+                         . json_encode($fields), 1); // Hopefully every geek can read JS, right?
                         continue;
                     }
                     // Trim some values.
@@ -244,7 +243,8 @@ class tool_cohortdatabase_sync {
                         $fields = $this->db_decode($fields);
                         $fields[$remoteuserfieldl] = trim($fields[$remoteuserfieldl]);
                         if (empty($fields[$remoteuserfieldl])) {
-                            $trace->output('error: invalid external cohort record, user fields is mandatory: ' . json_encode($fields), 1); // Hopefully every geek can read JS, right?
+                            $trace->output('error: invalid external cohort record, user fields is mandatory: ' .
+                              json_encode($fields), 1); // Hopefully every geek can read JS, right?
                             continue;
                         }
                         $foundexternalcohort = true;
@@ -416,7 +416,7 @@ class tool_cohortdatabase_sync {
 
         $adodb = $this->db_init();
 
-        if (!$adodb or !$adodb->IsConnected()) {
+        if (!$adodb || !$adodb->IsConnected()) {
             $this->config->debugdb = $olddebugdb;
             $CFG->debug = $olddebug;
             ini_set('display_errors', $olddisplay);
@@ -497,7 +497,7 @@ class tool_cohortdatabase_sync {
      */
     protected function db_encode($text) {
         $dbenc = $this->config->dbencoding;
-        if (empty($dbenc) or $dbenc == 'utf-8') {
+        if (empty($dbenc) || $dbenc == 'utf-8') {
             return $text;
         }
         if (is_array($text)) {
@@ -518,7 +518,7 @@ class tool_cohortdatabase_sync {
      */
     protected function db_decode($text) {
         $dbenc = $this->config->dbencoding;
-        if (empty($dbenc) or $dbenc == 'utf-8') {
+        if (empty($dbenc) || $dbenc == 'utf-8') {
             return $text;
         }
         if (is_array($text)) {
@@ -622,8 +622,8 @@ class tool_cohortdatabase_sync {
      */
     protected function get_cohorts() {
         global $DB;
-        $cohortrecords = $DB->get_records('cohort', array('component' => 'tool_cohortdatabase'),
-            '', 'idnumber, id, name, description, contextid, descriptionformat, visible, component, timecreated, timemodified, theme');
+        $cohortrecords = $DB->get_records('cohort', array('component' => 'tool_cohortdatabase'), '',
+         'idnumber, id, name, description, contextid, descriptionformat, visible, component, timecreated, timemodified, theme');
         $cohorts = [];
         foreach ($cohortrecords as $cohort) {
             // Index the cohorts using idnumber for easy processing.

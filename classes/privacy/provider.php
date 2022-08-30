@@ -17,15 +17,13 @@
 /**
  * Privacy Subsystem implementation for tool_cohortdatabase.
  *
- * @package    tool_capability
+ * @package    tool_cohortdatabase
  * @copyright  2018 Catalyst IT
  * @author     Dan Marsden
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace tool_cohortdatabase\privacy;
-
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * Privacy Subsystem for tool_cohortdatabase implementing null_provider.
