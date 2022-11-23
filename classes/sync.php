@@ -608,7 +608,7 @@ class tool_cohortdatabase_sync {
         // Clean up empty cohorts created by this plugin that are not in use by enrolment plugins.
         $sql = "DELETE FROM {cohort}
                  WHERE id in (SELECT c.id
-                                FROM {cohort} c
+                         FROM (SELECT * FROM {cohort}) AS c
                            LEFT JOIN {cohort_members} cm ON cm.cohortid = c.id
                                WHERE component = 'tool_cohortdatabase' AND cm.id is null
                                      AND c.id NOT IN (select customint1 from {enrol} where enrol = 'cohort'))";
