@@ -25,8 +25,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2022083102;        // The current plugin version (Date: YYYYMMDDXX).
-$plugin->release = "2022083102";
+$plugin->version   = 2022112500;        // The current plugin version (Date: YYYYMMDDXX).
+$plugin->release = 2022112500;
 $plugin->requires  = 2018051718; // Requires 3.5.
 $plugin->component = 'tool_cohortdatabase';
 $plugin->maturity = MATURITY_STABLE;
