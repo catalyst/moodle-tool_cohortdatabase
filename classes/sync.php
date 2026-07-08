@@ -62,20 +62,20 @@ class tool_cohortdatabase_sync {
         raise_memory_limit(MEMORY_HUGE);
 
         // Set some vars for better code readability.
-        $cohorttable           = trim($this->config->remotecohorttable);
-        $localuserfield        = trim($this->config->localuserfield);
-        $remoteuserfield       = trim($this->config->remoteuserfield);
-        $remotecohortidfield   = trim($this->config->remotecohortidfield);
-        $remotecohortnamefield = trim($this->config->remotecohortnamefield);
-        $remotecohortdescfield = trim($this->config->remotecohortdescfield);
-        $removeaction          = trim($this->config->removeaction); // Should rename this (0 = remove, 1 = keep).
-        $createusers           = trim($this->config->createusers);
-        $remotecreateusersusername = trim($this->config->createusers_username);
-        $remotecreateusersemail = trim($this->config->createusers_email);
-        $remotecreateusersfirstname = trim($this->config->createusers_firstname);
-        $remotecreateuserslastname = trim($this->config->createusers_lastname);
-        $remotecreateusersidnumber = trim($this->config->createusers_idnumber);
-        $remotecreateusersauth = trim($this->config->createusers_auth);
+        $cohorttable           = trim($this->config->remotecohorttable ?? '');
+        $localuserfield        = trim($this->config->localuserfield ?? '');
+        $remoteuserfield       = trim($this->config->remoteuserfield ?? '');
+        $remotecohortidfield   = trim($this->config->remotecohortidfield ?? '');
+        $remotecohortnamefield = trim($this->config->remotecohortnamefield ?? '');
+        $remotecohortdescfield = trim($this->config->remotecohortdescfield ?? '');
+        $removeaction          = trim($this->config->removeaction ?? ''); // Should rename this (0 = remove, 1 = keep).
+        $createusers           = trim($this->config->createusers ?? '');
+        $remotecreateusersusername = trim($this->config->createusers_username ?? '');
+        $remotecreateusersemail = trim($this->config->createusers_email ?? '');
+        $remotecreateusersfirstname = trim($this->config->createusers_firstname ?? '');
+        $remotecreateuserslastname = trim($this->config->createusers_lastname ?? '');
+        $remotecreateusersidnumber = trim($this->config->createusers_idnumber ?? '');
+        $remotecreateusersauth = trim($this->config->createusers_auth ?? '');
 
         // Lowercased versions - necessary because we normalise the resultset with array_change_key_case().
         $remoteuserfieldl  = strtolower($remoteuserfield);
@@ -399,7 +399,7 @@ class tool_cohortdatabase_sync {
 
         $this->config = get_config('tool_cohortdatabase');
 
-        $cohorttable = $this->config->remotecohorttable;
+        $cohorttable = $this->config->remotecohorttable ?? '';
 
         if (empty($cohorttable)) {
             echo $OUTPUT->notification('External cohort table not specified.', 'notifyproblem');
@@ -471,7 +471,7 @@ class tool_cohortdatabase_sync {
         if (empty($this->config->verifycert)) {
             $extdb->setConnectionParameter('TrustServerCertificate', 1);
         }
-        if ($this->config->debugdb) {
+        if (!empty($this->config->debugdb)) {
             $extdb->debug = true;
             ob_start(); // Start output buffer to allow later use of the page headers.
         }
@@ -486,7 +486,7 @@ class tool_cohortdatabase_sync {
         }
 
         $extdb->SetFetchMode(ADODB_FETCH_ASSOC);
-        if ($this->config->dbsetupsql) {
+        if (!empty($this->config->dbsetupsql)) {
             $extdb->Execute($this->config->dbsetupsql);
         }
         return $extdb;
